@@ -1,0 +1,54 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: user-service
+
+  data:
+    mongodb:
+      uri:  mongodb+srv://jaymehta2189:jaymehta24@cluster0.ozmvbup.mongodb.net/User_service2
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: user-consumer-group
+      auto-offset-reset: earliest
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+  user-service:
+    image: eclipse-temurin:17-jdk
+    volumes:
+      - ./target/user-service.jar:/app/app.jar
+    working_dir: /app
+    command: [ "java", "-jar", "app.jar" ]
+    ports:
+      - "8081:8081"
+#server:
+#  port: 8081
+#
+#spring:
+#  application:
+#    name: user-service
+#
+#  data:
+#    mongodb:
+#      uri: ${MONGODB_URI}
+#
+#  kafka:
+#    bootstrap-servers: ${KAFKA_SERVERS}
+#    consumer:
+#      group-id: ${KAFKA_CONSUMER_GROUP}
+#      auto-offset-reset: earliest
+#    producer:
+#      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+#      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+#
+#management:
+#  endpoints:
+#    web:
+#      exposure:
+#        include: health,info
+#
