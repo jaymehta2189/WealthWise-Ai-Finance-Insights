@@ -116,8 +116,14 @@ public class SpendingService {
                 .build());
     }
 
+//    public List<CategoricalSpendDTO> getAllSummaries(String userId) {
+//        return repo.findByUserId(userId).stream()
+//                .map(this::map)
+//                .collect(Collectors.toList());
+//    }
     public List<CategoricalSpendDTO> getAllSummaries(String userId) {
         return repo.findByUserId(userId).stream()
+                .sorted(Comparator.comparing(CategoricalSpend::getPeriod).reversed()) // Newest to oldest
                 .map(this::map)
                 .collect(Collectors.toList());
     }

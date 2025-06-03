@@ -8,10 +8,15 @@ import com.wealthwise.budgetservice.dto.CategoryBudgetResponse;
 import com.wealthwise.budgetservice.model.Budget;
 import com.wealthwise.budgetservice.repository.BudgetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,6 +27,9 @@ public class BudgetService {
     public Budget createBudget(Budget budget) {
         // ensure spentSoFar is initialized
         System.out.println("dsfcsdszfz");
+        if (budget.getUserId() != null) {
+            budgetRepository.deleteAllByUserId(budget.getUserId());
+        }
         if (budget.getSpentSoFar().isEmpty()) {
             for (BudgetCategory c : BudgetCategory.values()) {
                 budget.getSpentSoFar().put(c, 0.0);
@@ -95,7 +103,65 @@ public class BudgetService {
     }
 
     public List<CategoryBudgetResponse> getLastSummary(String userId) {
-        Budget budget = budgetRepository.findByUserId(userId);
-        return budget.getLastSummary();
+        return budgetRepository.findTopByUserIdOrderByEndMonthDesc(userId)
+                .map(Budget::getLastSummary)
+                .orElse(Collections.emptyList());
+    }
+
+    public Budget editBudget(String userId, Budget incoming) {
+        // 1. Fetch the most recent existing budget for this user:
+        Optional<Budget> maybeCurrent = budgetRepository.findTopByUserIdOrderByEndMonthDesc(userId);
+        if (maybeCurrent.isEmpty()) {
+            // No existing budget to edit; respond with 404:
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No budget found for user: " + userId);
+        }
+
+        Budget stored = maybeCurrent.get();
+
+        // 2. Overwrite start/end if provided:
+        stored.setStartMonth(incoming.getStartMonth());
+        stored.setEndMonth(incoming.getEndMonth());
+
+        // 3. Merge categoryLimits + spentSoFar:
+        Map<BudgetCategory, Double> existingLimits = stored.getCategoryLimits();
+        Map<BudgetCategory, Double> existingSpent  = stored.getSpentSoFar();
+
+        // For each incoming category:
+        for (Map.Entry<BudgetCategory, Double> e : incoming.getCategoryLimits().entrySet()) {
+            BudgetCategory cat   = e.getKey();
+            Double       newLimit = e.getValue();
+
+            if (existingLimits.containsKey(cat)) {
+                // Category already existed → update its limit, keep spentSoFar as-is
+                existingLimits.put(cat, newLimit);
+                // spentSoFar.get(cat) remains unchanged
+            } else {
+                // A brand‐new category → add to categoryLimits, initialize spentSoFar at 0.0
+                existingLimits.put(cat, newLimit);
+                existingSpent.put(cat, 0.0);
+            }
+        }
+
+        // NOTE: We are NOT removing any categories that existed before but are missing in the incoming.
+        // If you want to drop categories that the user no longer specifies, you could filter them out here.
+
+        // 4. Re-build lastSummary:
+        List<CategoryBudgetResponse> updatedSummary = existingLimits.entrySet().stream()
+                .map(entry -> {
+                    BudgetCategory category = entry.getKey();
+                    double       limit      = entry.getValue();
+                    double       spent      = existingSpent.getOrDefault(category, 0.0);
+                    return new CategoryBudgetResponse(category, limit, spent);
+                })
+                .collect(Collectors.toList());
+        stored.setLastSummary(updatedSummary);
+
+        // 5. Persist and return
+        return budgetRepository.save(stored);
+    }
+
+    public void deleteBudget(String userId) {
+        budgetRepository.deleteAllByUserId(userId);
+
     }
 }

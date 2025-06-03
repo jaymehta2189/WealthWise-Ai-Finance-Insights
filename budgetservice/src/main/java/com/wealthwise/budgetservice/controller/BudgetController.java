@@ -27,5 +27,14 @@ public class BudgetController {
         List<CategoryBudgetResponse> summary = budgetService.getLastSummary(userId);
         return ResponseEntity.ok(summary);
     }
+    @PostMapping("/{userId}/edit")
+    public ResponseEntity<Budget> editBudget(@PathVariable String userId,@RequestBody Budget budget){
+        return ResponseEntity.ok(budgetService.editBudget(userId,budget));
+    }
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Void> deleteBudget(@PathVariable String userId) {
+        budgetService.deleteBudget(userId);
+        return ResponseEntity.noContent().build(); // HTTP 204 No Content
+    }
 
 }
