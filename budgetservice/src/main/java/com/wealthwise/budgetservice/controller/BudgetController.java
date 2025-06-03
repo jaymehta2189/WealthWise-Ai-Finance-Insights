@@ -36,5 +36,8 @@ public class BudgetController {
         budgetService.deleteBudget(userId);
         return ResponseEntity.noContent().build(); // HTTP 204 No Content
     }
-
+    @GetMapping("/{userId}")
+    public ResponseEntity<Budget> getBudget(@PathVariable String userId){
+        return ResponseEntity.ok(budgetService.getBudget(userId));
+    }
 }

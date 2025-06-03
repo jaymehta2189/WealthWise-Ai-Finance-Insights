@@ -13,10 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -108,60 +105,62 @@ public class BudgetService {
                 .orElse(Collections.emptyList());
     }
 
-    public Budget editBudget(String userId, Budget incoming) {
-        // 1. Fetch the most recent existing budget for this user:
-        Optional<Budget> maybeCurrent = budgetRepository.findTopByUserIdOrderByEndMonthDesc(userId);
-        if (maybeCurrent.isEmpty()) {
-            // No existing budget to edit; respond with 404:
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No budget found for user: " + userId);
-        }
-
-        Budget stored = maybeCurrent.get();
-
-        // 2. Overwrite start/end if provided:
-        stored.setStartMonth(incoming.getStartMonth());
-        stored.setEndMonth(incoming.getEndMonth());
-
-        // 3. Merge categoryLimits + spentSoFar:
-        Map<BudgetCategory, Double> existingLimits = stored.getCategoryLimits();
-        Map<BudgetCategory, Double> existingSpent  = stored.getSpentSoFar();
-
-        // For each incoming category:
-        for (Map.Entry<BudgetCategory, Double> e : incoming.getCategoryLimits().entrySet()) {
-            BudgetCategory cat   = e.getKey();
-            Double       newLimit = e.getValue();
-
-            if (existingLimits.containsKey(cat)) {
-                // Category already existed → update its limit, keep spentSoFar as-is
-                existingLimits.put(cat, newLimit);
-                // spentSoFar.get(cat) remains unchanged
-            } else {
-                // A brand‐new category → add to categoryLimits, initialize spentSoFar at 0.0
-                existingLimits.put(cat, newLimit);
-                existingSpent.put(cat, 0.0);
-            }
-        }
-
-        // NOTE: We are NOT removing any categories that existed before but are missing in the incoming.
-        // If you want to drop categories that the user no longer specifies, you could filter them out here.
-
-        // 4. Re-build lastSummary:
-        List<CategoryBudgetResponse> updatedSummary = existingLimits.entrySet().stream()
-                .map(entry -> {
-                    BudgetCategory category = entry.getKey();
-                    double       limit      = entry.getValue();
-                    double       spent      = existingSpent.getOrDefault(category, 0.0);
-                    return new CategoryBudgetResponse(category, limit, spent);
-                })
-                .collect(Collectors.toList());
-        stored.setLastSummary(updatedSummary);
-
-        // 5. Persist and return
-        return budgetRepository.save(stored);
-    }
 
     public void deleteBudget(String userId) {
         budgetRepository.deleteAllByUserId(userId);
 
+    }
+public Budget editBudget(String userId, Budget incoming) {
+    Optional<Budget> maybeCurrent = budgetRepository.findTopByUserIdOrderByEndMonthDesc(userId);
+    if (maybeCurrent.isEmpty()) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                "No budget found for user: " + userId);
+    }
+    Budget stored = maybeCurrent.get();
+
+    stored.setStartMonth(incoming.getStartMonth());
+    stored.setEndMonth(incoming.getEndMonth());
+
+    Map<BudgetCategory, Double> existingLimits = stored.getCategoryLimits();
+    Map<BudgetCategory, Double> existingSpent  = stored.getSpentSoFar();
+
+    Set<BudgetCategory> incomingCats = incoming.getCategoryLimits().keySet();
+
+    Iterator<BudgetCategory> it = existingLimits.keySet().iterator();
+    while (it.hasNext()) {
+        BudgetCategory cat = it.next();
+        if (!incomingCats.contains(cat)) {
+            it.remove();                     // removes from existingLimits
+            existingSpent.remove(cat);       // remove spentSoFar for that category
+        }
+    }
+
+    for (Map.Entry<BudgetCategory, Double> e : incoming.getCategoryLimits().entrySet()) {
+        BudgetCategory cat      = e.getKey();
+        Double       newLimit  = e.getValue();
+
+        if (existingLimits.containsKey(cat)) {
+            existingLimits.put(cat, newLimit);
+        } else {
+            existingLimits.put(cat, newLimit);
+            existingSpent.put(cat, 0.0);
+        }
+    }
+
+    List<CategoryBudgetResponse> updatedSummary = existingLimits.entrySet().stream()
+            .map(entry -> {
+                BudgetCategory category = entry.getKey();
+                double       limit      = entry.getValue();
+                double       spent      = existingSpent.getOrDefault(category, 0.0);
+                return new CategoryBudgetResponse(category, limit, spent);
+            })
+            .collect(Collectors.toList());
+    stored.setLastSummary(updatedSummary);
+
+    return budgetRepository.save(stored);
+}
+
+    public Budget getBudget(String userId) {
+        return budgetRepository.findByUserId(userId);
     }
 }
