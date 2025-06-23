@@ -26,7 +26,7 @@ public class KafkaProducerConfig {
     public ProducerFactory<String, Transactiondto> producerFactory() {
         Map<String, Object> props = new HashMap<>();
         // Broker address
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
         // Key serializer
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         // Value serializer – we’ll override it below

@@ -1,0 +1,37 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true           # Enable Eureka integration
+          lower-case-service-id: true  # Make service IDs lowercase
+      default-filters:
+        - StripPrefix=1
+      routes:
+        - id: user-service
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/user-service/**
+        - id: wealthwise
+          uri: lb://WEALTHWISE
+          predicates:
+            - Path=/wealthwise/**
+        - id: transactionservice
+          uri: lb://TRANSACTIONSERVICE
+          predicates:
+            - Path=/transactionservice/**
+        - id: budgetservice
+          uri: lb://BUDGETSERVICE
+          predicates:
+            - Path=/budgetservice/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka  # Update this if deploying remotely

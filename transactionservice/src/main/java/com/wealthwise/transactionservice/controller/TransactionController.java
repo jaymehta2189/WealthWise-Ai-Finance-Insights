@@ -11,7 +11,7 @@ import java.util.List;
 
 @Controller
 @RequestMapping("/api/v1/transaction")
-@CrossOrigin(origins = "*")
+//@CrossOrigin(origins = "*")
 public class TransactionController {
 
     @Autowired
