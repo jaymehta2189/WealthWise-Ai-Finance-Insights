@@ -163,23 +163,56 @@ const Dashboard = () => {
           }))
         );
         console.log("investment",investment);  
-        setRecentTransactions(transactionsRes.data);
+        const sortedTransactions = [...transactionsRes.data].sort(
+          (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+        );
+        setRecentTransactions(sortedTransactions);
         setInvestment(investment.data.value);
 
-        const monthOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+//         const monthOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-const formattedMonthlySpending = monthlySpendingRes.data.map((item) => {
-  const date = new Date(item.period); // e.g., "2025-05"
-  const month = date.toLocaleString("en-US", { month: "short" }); // "May"
-  return {
-    name: month,
-    amount: item.totalExpense,
-  };
-}).sort((a, b) => {
-  return monthOrder.indexOf(a.name) - monthOrder.indexOf(b.name);
-});
+// const formattedMonthlySpending = monthlySpendingRes.data.map((item) => {
+//   const date = new Date(item.period); // e.g., "2025-05"
+//   const month = date.toLocaleString("en-US", { month: "short" }); // "May"
+//   return {
+//     name: month,
+//     amount: item.totalExpense,
+//   };
+// }).sort((a, b) => {
+//   return monthOrder.indexOf(a.name) - monthOrder.indexOf(b.name);
+// });
         
-        setMonthlyExpenseChart(formattedMonthlySpending);
+//         setMonthlyExpenseChart(formattedMonthlySpending);
+
+
+      const data = monthlySpendingRes.data;
+
+      // convert and sort by real date
+      const sorted = data
+        .map(item => ({
+          ...item,
+          dateObj: new Date(`${item.period}-01`)
+        }))
+        .sort((a, b) => a.dateObj - b.dateObj);
+
+      // take last 12 months only
+      const last12Months = sorted.slice(-12);
+
+      // format for chart
+      const formattedMonthlySpending = last12Months.map(item => ({
+        name: item.dateObj.toLocaleString("en-US", {
+          month: "short"
+        }),
+        fullLabel: item.dateObj.toLocaleString("en-US", {
+          month: "short",
+          year: "numeric"
+        }),
+        amount: item.totalExpense,
+        period: item.period
+      }));
+
+      setMonthlyExpenseChart(formattedMonthlySpending);
+
 
         console.log({
           monthlySpending: monthlySpendingRes.data,
@@ -279,8 +312,8 @@ const formattedMonthlySpending = monthlySpendingRes.data.map((item) => {
           <div className="flex justify-between items-center mb-4">
             <h2 className="card-title">Spending Trends</h2>
             <select className="text-sm border border-gray-200 rounded-md px-2 py-1 dark:bg-secondary-800 dark:border-secondary-700">
-              <option>Last 7 Months</option>
               <option>Last 12 Months</option>
+              <option>Last 7 Months</option>
               <option>YTD</option>
             </select>
           </div>
@@ -311,9 +344,19 @@ const formattedMonthlySpending = monthlySpendingRes.data.map((item) => {
                 <YAxis
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(value) => `${value}`}
+                  tickFormatter={(value) => `₹${value}`}
                 />
-                <Tooltip content={<CustomTooltip />} />
+                {/* <Tooltip content={<CustomTooltip />} formatter={(value) => [`₹${value}`, ""]}/> */}
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "white",
+                    borderRadius: "0.5rem",
+                    boxShadow:
+                      "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                    border: "1px solid rgba(229, 231, 235, 1)",
+                  }}
+                  formatter={(value) => [`₹${value}`, ""]}
+                />
                 <Area
                   type="monotone"
                   dataKey="amount"

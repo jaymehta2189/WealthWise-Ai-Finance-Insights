@@ -180,8 +180,11 @@ const Transaction = () => {
       setLoading(true);
       try {
         const res = await axios.get(`${import.meta.env.VITE_APP_API_URL_3}/api/v1/transaction/user/${id}`)
-        console.log(res.data);
-        setTransactions(res.data);
+        const sorted = [...res.data].sort(
+              (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+            );      
+        console.log(sorted);
+        setTransactions(sorted);
       } catch (err) {
         console.error('Error fetching transactions:', err);
       } finally {
@@ -294,7 +297,7 @@ const Transaction = () => {
                       : 'text-error-600 dark:text-error-400'
                   }`}>
                     {transaction.type === "DEBIT" ? '-' : ''}
-                    ${Math.abs(transaction.amount).toFixed(2)}
+                    ₹{Math.abs(transaction.amount).toFixed(2)}
                   </p>
                 </div>
               </motion.div>

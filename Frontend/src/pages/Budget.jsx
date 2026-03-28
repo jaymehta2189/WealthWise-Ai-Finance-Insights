@@ -12,7 +12,7 @@ import {
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import DatePicker from 'react-datepicker';
-import { Wallet, ArrowDownLeft, DollarSign, Plus, BarChart, X, Trash2, Info } from 'lucide-react';
+import { Wallet, ArrowDownLeft, IndianRupee , Plus, BarChart, X, Trash2, Info } from 'lucide-react';
 import 'react-datepicker/dist/react-datepicker.css';
 
 ChartJS.register(
@@ -32,6 +32,7 @@ const createBudget = async (budgetData, togglebtn, setTogglebtn) => {
         console.log('Creating budget...', budgetData);
         const response = await axios.post(`${import.meta.env.VITE_APP_API_URL_4}/api/v1/budget`, budgetData);
         setTogglebtn(false);
+        
         return response.data;
       } catch (error) {
         console.error('Error creating budget:', error);
@@ -543,7 +544,7 @@ function Budget() {
             textColor="text-orange-500" 
           />
           <BudgetSummaryCard 
-            icon={<DollarSign size={24} />} 
+            icon={<IndianRupee size={24} />} 
             title="Remaining" 
             amount={remaining} 
             subtitle="Left to spend this month" 

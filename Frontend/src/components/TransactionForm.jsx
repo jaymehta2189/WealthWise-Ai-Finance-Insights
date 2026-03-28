@@ -196,7 +196,7 @@ import axios from 'axios';
 
 import React, { useId, useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Plus, DollarSign } from 'lucide-react';
+import { X, Plus, IndianRupee  } from 'lucide-react';
 import { parse } from 'postcss';
 
 const transactionCategories = {
@@ -319,7 +319,7 @@ const TransactionForm = ({ onClose , toggle,setToggle}) => {
               Amount
             </label>
             <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400 dark:text-secondary-500" size={18} />
+              <IndianRupee className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400 dark:text-secondary-500" size={18} />
               <input
                 type="number"
                 id="amount"
